@@ -6,10 +6,10 @@ const ctx = canvas.getContext("2d");
 const canvasGhost = document.getElementById('canvas-ghost');
 const ctxGhost = canvasGhost.getContext('2d');
 
-const videos = ['images/vid1.mp4', 'images/vid4.mp4', 'images/vid8.mp4', 'images/vid11.mp4', 'images/vid7.mp4', 'images/vid6.mp4', 'images/vid10.mp4', 'images/vid3.mp4', 'images/vid9.mp4', 'images/vid5.mp4', 'images/vid2.mp4', 'images/vid12.mp4', 'images/vid13.mp4', 'images/vid14.mp4', 'images/vid15.mp4', 'images/vid16.mp4', 'images/vid17.mp4', 'images/vid18.mp4', 'images/vid20.mp4', 'images/vid19.mp4'] // Array of my videos
+const videos = ['images/vid1.mp4', 'images/vid4.mp4', 'images/vid8.mp4', 'images/vid11.mp4', 'images/vid7.mp4', 'images/vid6.mp4', 'images/vid10.mp4', 'images/vid3.mp4', 'images/vid9.mp4', 'images/vid5.mp4', 'images/vid2.mp4', 'images/vid12.mp4', 'images/vid13.mp4', 'images/vid14.mp4', 'images/vid15.mp4', 'images/vid16.mp4', 'images/vid17.mp4', 'images/vid18.mp4', 'images/vid20.mp4', 'images/vid19.mp4']
 let currentIndex = 0;
-let pixelSize = 1; // Start pixel size (normal)
-let displayWidth = window.innerWidth * 0.05; // video is __% of screen width
+let pixelSize = 1;
+let displayWidth = window.innerWidth * 0.05;
 
 let chaos = 0;
 let nextClicks = 0;
@@ -17,40 +17,48 @@ let backClicks = 0;
 let clicks = 0;
 let lastWentUp = false;
 
+// ------- PRELOADER ------- //
+// Pre-create all video elements so browsers download them in background
+const videoEls = videos.map(src => {
+    const v = document.createElement('video');
+    v.src = src;
+    v.preload = 'auto';
+    v.muted = true;
+    v.playsInline = true;
+    return v;
+});
+
+// Set the main vid to first video
 vid.src = videos[currentIndex];
 
 vid.addEventListener('loadedmetadata', () => {
     canvas.width = displayWidth;
     canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
     vid.play().catch(() => {});
-    requestAnimationFrame(draw);
 });
 
-if (vid.readyState >= 1) {
-    canvas.width = displayWidth;
-    canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
-    vid.play().catch(() => {});
-    requestAnimationFrame(draw);
-}
-
+// ------- DRAW LOOP ------- //
+// One persistent loop that never stops — fixes frozen first frame
 function draw() {
-    if (!vid.videoWidth || !vid.videoHeight) {
-    requestAnimationFrame(draw);
-    return;
+    if (vid.readyState >= 2 && vid.videoWidth && vid.videoHeight) {
+        // Only update canvas dimensions when displayWidth changes, not every frame
+        if (canvas.width !== displayWidth) {
+            canvas.width = displayWidth;
+            canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
+        }
+
+        const safePixelSize = Math.min(pixelSize, displayWidth);
+        const smallW = Math.max(1, Math.floor(displayWidth / safePixelSize));
+        const smallH = Math.max(1, Math.floor(canvas.height / safePixelSize));
+
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(vid, 0, 0, smallW, smallH);
+        ctx.drawImage(canvas, 0, 0, smallW, smallH, 0, 0, canvas.width, canvas.height);
     }
-
-    canvas.width = displayWidth;
-    canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
-    const safePixelSize = Math.min(pixelSize, displayWidth); // So we never get less than 1 pixel (safety net)
-    const smallW = Math.max(1, Math.floor(displayWidth / safePixelSize));
-    const smallH = Math.max(1, Math.floor(canvas.height / safePixelSize));
-
-    ctx.imageSmoothingEnabled = false; // Keep image pixelated
-    ctx.drawImage(vid, 0, 0, smallW, smallH); // Draw compressed image onto canvas
-    ctx.drawImage(canvas, 0, 0, smallW, smallH, 0, 0, canvas.width, canvas.height); // Stretches image back up to size
-    
     requestAnimationFrame(draw);
 }
+
+requestAnimationFrame(draw); // Start loop immediately, never stops
 
 
 // ------- AUTONOMOUS  ------- //
@@ -62,20 +70,20 @@ function startAutonomous() {
     autonomousStarted = true;
 
     function autonomousLoop() {
-    const roll = Math.random();
-    if (roll < 0.4) {
-        document.getElementById('nextBtn').click();
-    } else if (roll < 0.7) {
-        document.getElementById('prevBtn').click();
-    } else if (roll < 0.85) {
-        document.getElementById('zoomInBtn').click();
-    } else {
-        document.getElementById('zoomOutBtn').click();
+        const roll = Math.random();
+        if (roll < 0.4) {
+            document.getElementById('nextBtn').click();
+        } else if (roll < 0.7) {
+            document.getElementById('prevBtn').click();
+        } else if (roll < 0.85) {
+            document.getElementById('zoomInBtn').click();
+        } else {
+            document.getElementById('zoomOutBtn').click();
+        }
+        const nextDelay = Math.max(1000, 3000 - chaos * 50);
+        setTimeout(autonomousLoop, nextDelay);
     }
-    const nextDelay = Math.max(1000, 3000 - chaos * 50);
-    setTimeout(autonomousLoop, nextDelay);
-  }
-  autonomousLoop();
+    autonomousLoop();
 }
 
 // ------- HELPER FUNCTIONS ------- //
@@ -119,10 +127,25 @@ function triggerShift() {
 
 // ------- PREV/NEXT VIDEO ------- //
 
-// Switch through videos
 function updateArrows() {
     document.getElementById('prevBtn').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
     document.getElementById('nextBtn').style.visibility = currentIndex === videos.length - 1 ? 'hidden' : 'visible';
+}
+
+function switchVideo(newIndex) {
+    currentIndex = newIndex;
+    // Use the preloaded video element's src so browser already has it buffered
+    vid.src = videoEls[currentIndex].src;
+    vid.addEventListener('loadedmetadata', () => {
+        canvas.width = displayWidth;
+        canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
+        vid.play().catch(() => {});
+    }, { once: true });
+    // If already buffered, play immediately
+    if (vid.readyState >= 1) {
+        vid.play().catch(() => {});
+    }
+    updateArrows();
 }
 
 document.getElementById('nextBtn').addEventListener('click', () => {
@@ -143,10 +166,7 @@ document.getElementById('nextBtn').addEventListener('click', () => {
             triggerShift();
     }
 
-    currentIndex = (currentIndex + 1) % videos.length;
-    vid.src = videos[currentIndex];
-    vid.addEventListener('loadedmetadata', () => { vid.play(); }, { once: true });
-    updateArrows();
+    switchVideo((currentIndex + 1) % videos.length);
 });
 
 document.getElementById('prevBtn').addEventListener('click', () => {
@@ -168,10 +188,7 @@ document.getElementById('prevBtn').addEventListener('click', () => {
             triggerGhost();
     }
 
-    currentIndex = (currentIndex - 1 + videos.length) % videos.length;
-    vid.src = videos[currentIndex];
-    vid.addEventListener('loadedmetadata', () => { vid.play(); }, { once: true });
-    updateArrows();
+    switchVideo((currentIndex - 1 + videos.length) % videos.length);
 });
 
 
@@ -217,9 +234,9 @@ document.getElementById('zoomInBtn').addEventListener('click', () => {
 
 // ------- Zoom out ------- //
 document.getElementById('zoomOutBtn').addEventListener('click', () => {
-    const goesUp = Math.random() < 0.15; // 15% chance it grows
+    const goesUp = Math.random() < 0.15;
     displayWidth += goesUp ? 80 : -80;
-    displayWidth = Math.max(100, displayWidth); // don't let it get too small
+    displayWidth = Math.max(100, displayWidth);
 });
 
 updateArrows();
