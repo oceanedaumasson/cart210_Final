@@ -5,6 +5,7 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext("2d");
 const canvasGhost = document.getElementById('canvas-ghost');
 const ctxGhost = canvasGhost.getContext('2d');
+const placeholder = document.getElementById('placeholder');
 
 const videos = ['images/vid1.mp4', 'images/vid4.mp4', 'images/vid8.mp4', 'images/vid11.mp4', 'images/vid7.mp4', 'images/vid6.mp4', 'images/vid10.mp4', 'images/vid3.mp4', 'images/vid9.mp4', 'images/vid5.mp4', 'images/vid2.mp4', 'images/vid12.mp4', 'images/vid13.mp4', 'images/vid14.mp4', 'images/vid15.mp4', 'images/vid16.mp4', 'images/vid17.mp4', 'images/vid18.mp4', 'images/vid20.mp4', 'images/vid19.mp4']
 let currentIndex = 0;
@@ -17,8 +18,11 @@ let backClicks = 0;
 let clicks = 0;
 let lastWentUp = false;
 
+// Set initial placeholder size to match displayWidth
+placeholder.style.width = displayWidth + 'px';
+placeholder.style.height = 'auto';
+
 // ------- PRELOADER ------- //
-// Preload only neighbours
 const videoEls = {};
 
 function preloadNeighbours(index) {
@@ -41,13 +45,13 @@ vid.addEventListener('loadedmetadata', () => {
     canvas.width = displayWidth;
     canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
     vid.play().catch(() => {});
+    // Hide placeholder permanently once first video is ready
+    placeholder.style.display = 'none';
 });
 
 // ------- DRAW LOOP ------- //
-// One persistent loop that never stops — fixes frozen first frame
 function draw() {
     if (vid.readyState >= 2 && vid.videoWidth && vid.videoHeight) {
-        // Only update canvas dimensions when displayWidth changes, not every frame
         if (canvas.width !== displayWidth) {
             canvas.width = displayWidth;
             canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
@@ -64,7 +68,7 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-requestAnimationFrame(draw); // Start loop immediately, never stops
+requestAnimationFrame(draw);
 
 
 // ------- AUTONOMOUS  ------- //
@@ -140,19 +144,17 @@ function updateArrows() {
 
 function switchVideo(newIndex) {
     currentIndex = newIndex;
-    // Use the preloaded video element's src so browser already has it buffered
     vid.src = videoEls[currentIndex] ? videoEls[currentIndex].src : videos[currentIndex];
     vid.addEventListener('loadedmetadata', () => {
         canvas.width = displayWidth;
         canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
         vid.play().catch(() => {});
     }, { once: true });
-    // If already buffered, play immediately
     if (vid.readyState >= 1) {
         vid.play().catch(() => {});
     }
     updateArrows();
-    preloadNeighbours(currentIndex)
+    preloadNeighbours(currentIndex);
 }
 
 document.getElementById('nextBtn').addEventListener('click', () => {
@@ -229,6 +231,9 @@ document.addEventListener('mouseup', () => {
 // ------- Zoom In ------- //
 document.getElementById('zoomInBtn').addEventListener('click', () => {
     displayWidth += 80;
+    if (placeholder.style.display !== 'none') {
+        placeholder.style.width = displayWidth + 'px';
+    }
     if (clicks < 10) {
         if (clicks < 5) {
             pixelSize += 3;
@@ -244,6 +249,9 @@ document.getElementById('zoomOutBtn').addEventListener('click', () => {
     const goesUp = Math.random() < 0.15;
     displayWidth += goesUp ? 80 : -80;
     displayWidth = Math.max(100, displayWidth);
+    if (placeholder.style.display !== 'none') {
+        placeholder.style.width = displayWidth + 'px';
+    }
 });
 
 updateArrows();
