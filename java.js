@@ -18,15 +18,21 @@ let clicks = 0;
 let lastWentUp = false;
 
 // ------- PRELOADER ------- //
-// Pre-create all video elements so browsers download them in background
-const videoEls = videos.map(src => {
-    const v = document.createElement('video');
-    v.src = src;
-    v.preload = 'auto';
-    v.muted = true;
-    v.playsInline = true;
-    return v;
-});
+// Preload only neighbours
+const videoEls = {};
+
+function preloadNeighbours(index) {
+    [index - 1, index + 1].forEach(i => {
+        if (i >= 0 && i < videos.length && !videoEls[i]) {
+            const v = document.createElement('video');
+            v.src = videos[i];
+            v.preload = 'auto';
+            v.muted = true;
+            videoEls[i] = v;
+        }
+    });
+}
+preloadNeighbours(currentIndex);
 
 // Set the main vid to first video
 vid.src = videos[currentIndex];
@@ -135,7 +141,7 @@ function updateArrows() {
 function switchVideo(newIndex) {
     currentIndex = newIndex;
     // Use the preloaded video element's src so browser already has it buffered
-    vid.src = videoEls[currentIndex].src;
+    vid.src = videoEls[currentIndex] ? videoEls[currentIndex].src : videos[currentIndex];
     vid.addEventListener('loadedmetadata', () => {
         canvas.width = displayWidth;
         canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
@@ -146,6 +152,7 @@ function switchVideo(newIndex) {
         vid.play().catch(() => {});
     }
     updateArrows();
+    preloadNeighbours(currentIndex)
 }
 
 document.getElementById('nextBtn').addEventListener('click', () => {
