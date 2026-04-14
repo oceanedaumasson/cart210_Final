@@ -18,12 +18,20 @@ let clicks = 0;
 let lastWentUp = false;
 
 vid.src = videos[currentIndex];
+
 vid.addEventListener('loadedmetadata', () => {
     canvas.width = displayWidth;
     canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
-    vid.play();
-    draw();
+    vid.play().catch(() => {});
+    requestAnimationFrame(draw);
 });
+
+if (vid.readyState >= 1) {
+    canvas.width = displayWidth;
+    canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
+    vid.play().catch(() => {});
+    requestAnimationFrame(draw);
+}
 
 function draw() {
     if (!vid.videoWidth || !vid.videoHeight) {
