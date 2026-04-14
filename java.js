@@ -187,6 +187,8 @@ function triggerShift() {
 // ------- PREV/NEXT ------- //
 
 function updateArrows() {
+    document.getElementById('title').textContent = currentIndex === 0 ? 'MY GALLERY' : 'COME CLOSER';
+    
     // Prev is always hidden at index 0 — can never go back to the photo
     document.getElementById('prevBtn').style.visibility = currentIndex <= 1 ? 'hidden' : 'visible';
     document.getElementById('nextBtn').style.visibility = currentIndex === media.length - 1 ? 'hidden' : 'visible';
