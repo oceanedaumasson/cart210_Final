@@ -187,8 +187,9 @@ function triggerShift() {
 // ------- PREV/NEXT ------- //
 
 function updateArrows() {
-    document.getElementById('title').textContent = currentIndex === 0 ? 'MY GALLERY' : 'COME CLOSER';
-    
+    if (currentIndex >= 1 && !hasZoomed) {
+        document.getElementById('title').textContent = 'COME CLOSER';
+    }    
     // Prev is always hidden at index 0 — can never go back to the photo
     document.getElementById('prevBtn').style.visibility = currentIndex <= 1 ? 'hidden' : 'visible';
     document.getElementById('nextBtn').style.visibility = currentIndex === media.length - 1 ? 'hidden' : 'visible';
@@ -272,9 +273,10 @@ document.addEventListener('mouseup', () => {
 
 
 // ------- ZOOM IN ------- //
-
+let hasZoomed = false;
 document.getElementById('zoomInBtn').addEventListener('click', () => {
-    displayWidth += 80;
+    hasZoomed = true;
+    document.getElementById('title').textContent = '';    displayWidth += 80;
     if (clicks < 10) {
         if (clicks < 5) {
             pixelSize += 3;
