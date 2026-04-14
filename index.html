@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title></title>
+  <script src="java.js" defer></script>
+  <link rel="stylesheet" href="style.css">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final</title>
+</head>
+<body>
+    <h1 id="title">COME CLOSER</h1>
+    <div id="gallery-outer">
+        <div class="gallery-inner">
+            <button id="prevBtn">←</button>
+            <div class="video-container">
+                <video id="vid" autoplay loop muted playsinline style="display:none;">
+                    <source src="images/vid1.mp4" type="video/mp4">
+                </video>
+                <canvas id="canvas"></canvas>
+                <canvas id="canvas-ghost"></canvas>
+            </div>
+            
+            <button id="nextBtn">←</button>
+        </div>
+    </div>
+    <div id="sidebar">
+        <div id="sidebar-header"></div>
+        <div id="sidebar-content">
+            <button id="zoomInBtn">
+                <img src="images/zoomIn.svg">
+            </button>
+            <button id="zoomOutBtn">
+                <img src="images/zoomOut.svg">
+            </button>
+        </div>
+    </div>
+</body>
+</html>
