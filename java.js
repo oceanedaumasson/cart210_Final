@@ -1,4 +1,30 @@
-// ------- VIDEO ------- //
+// ------- MEDIA ARRAY ------- //
+
+const media = [
+    { type: 'image', src: 'images/intro.jpg' },  
+    { type: 'video', src: 'images/vid1.mp4' },
+    { type: 'video', src: 'images/vid4.mp4' },
+    { type: 'video', src: 'images/vid8.mp4' },
+    { type: 'video', src: 'images/vid11.mp4' },
+    { type: 'video', src: 'images/vid7.mp4' },
+    { type: 'video', src: 'images/vid6.mp4' },
+    { type: 'video', src: 'images/vid10.mp4' },
+    { type: 'video', src: 'images/vid3.mp4' },
+    { type: 'video', src: 'images/vid9.mp4' },
+    { type: 'video', src: 'images/vid5.mp4' },
+    { type: 'video', src: 'images/vid2.mp4' },
+    { type: 'video', src: 'images/vid12.mp4' },
+    { type: 'video', src: 'images/vid13.mp4' },
+    { type: 'video', src: 'images/vid14.mp4' },
+    { type: 'video', src: 'images/vid15.mp4' },
+    { type: 'video', src: 'images/vid16.mp4' },
+    { type: 'video', src: 'images/vid17.mp4' },
+    { type: 'video', src: 'images/vid18.mp4' },
+    { type: 'video', src: 'images/vid20.mp4' },
+    { type: 'video', src: 'images/vid19.mp4' },
+];
+
+// ------- SETUP ------- //
 
 const vid = document.getElementById('vid');
 const canvas = document.getElementById('canvas');
@@ -6,10 +32,9 @@ const ctx = canvas.getContext("2d");
 const canvasGhost = document.getElementById('canvas-ghost');
 const ctxGhost = canvasGhost.getContext('2d');
 
-const videos = ['images/vid1.mp4', 'images/vid4.mp4', 'images/vid8.mp4', 'images/vid11.mp4', 'images/vid7.mp4', 'images/vid6.mp4', 'images/vid10.mp4', 'images/vid3.mp4', 'images/vid9.mp4', 'images/vid5.mp4', 'images/vid2.mp4', 'images/vid12.mp4', 'images/vid13.mp4', 'images/vid14.mp4', 'images/vid15.mp4', 'images/vid16.mp4', 'images/vid17.mp4', 'images/vid18.mp4', 'images/vid20.mp4', 'images/vid19.mp4'] // Array of my videos
 let currentIndex = 0;
-let pixelSize = 1; // Start pixel size (normal)
-let displayWidth = window.innerWidth * 0.05; // video is __% of screen width
+let pixelSize = 1;
+let displayWidth = window.innerWidth * 0.05;
 
 let chaos = 0;
 let nextClicks = 0;
@@ -17,63 +42,112 @@ let backClicks = 0;
 let clicks = 0;
 let lastWentUp = false;
 
-vid.src = videos[currentIndex];
-vid.addEventListener('loadedmetadata', () => {
-    canvas.width = displayWidth;
-    canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
-    vid.play();
-    draw();
-});
+const photoImg = new Image();
+photoImg.src = media[0].src;
 
-function draw() {
+let photoDrawLoop = null;
+
+// ------- LOAD MEDIA ------- //
+
+function loadMedia(index) {
+    const item = media[index];
+
+    // Stop any existing photo draw loop
+    if (photoDrawLoop !== null) {
+        cancelAnimationFrame(photoDrawLoop);
+        photoDrawLoop = null;
+    }
+
+    if (item.type === 'image') {
+        vid.pause();
+        vid.src = '';
+
+        function drawPhoto() {
+            if (!photoImg.complete || photoImg.naturalWidth === 0) {
+                photoDrawLoop = requestAnimationFrame(drawPhoto);
+                return;
+            }
+            canvas.width = 300;
+            canvas.height = 300 * (photoImg.naturalHeight / photoImg.naturalWidth);
+
+            const safePixelSize = Math.min(pixelSize, displayWidth);
+            const smallW = Math.max(1, Math.floor(displayWidth / safePixelSize));
+            const smallH = Math.max(1, Math.floor(canvas.height / safePixelSize));
+
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(photoImg, 0, 0, canvas.width, canvas.height);
+
+            photoDrawLoop = requestAnimationFrame(drawPhoto);
+        }
+        drawPhoto();
+
+    } else {
+        vid.src = item.src;
+        vid.addEventListener('loadedmetadata', () => {
+            canvas.width = displayWidth;
+            canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
+            vid.play();
+            drawVideo();
+        }, { once: true });
+    }
+}
+
+// ------- DRAW VIDEO ------- //
+
+function drawVideo() {
     if (!vid.videoWidth || !vid.videoHeight) {
-    requestAnimationFrame(draw);
-    return;
+        requestAnimationFrame(drawVideo);
+        return;
     }
 
     canvas.width = displayWidth;
     canvas.height = displayWidth * (vid.videoHeight / vid.videoWidth);
-    const safePixelSize = Math.min(pixelSize, displayWidth); // So we never get less than 1 pixel (safety net)
+    const safePixelSize = Math.min(pixelSize, displayWidth);
     const smallW = Math.max(1, Math.floor(displayWidth / safePixelSize));
     const smallH = Math.max(1, Math.floor(canvas.height / safePixelSize));
 
-    ctx.imageSmoothingEnabled = false; // Keep image pixelated
-    ctx.drawImage(vid, 0, 0, smallW, smallH); // Draw compressed image onto canvas
-    ctx.drawImage(canvas, 0, 0, smallW, smallH, 0, 0, canvas.width, canvas.height); // Stretches image back up to size
-    
-    requestAnimationFrame(draw);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(vid, 0, 0, smallW, smallH);
+    ctx.drawImage(canvas, 0, 0, smallW, smallH, 0, 0, canvas.width, canvas.height);
+
+    // Only keep looping if we're still on a video
+    if (media[currentIndex].type === 'video') {
+        requestAnimationFrame(drawVideo);
+    }
 }
+
+loadMedia(0);
 
 
 // ------- AUTONOMOUS  ------- //
 let autonomousStarted = false;
 
 function startAutonomous() {
-    if (autonomousStarted)
-        return;
+    if (autonomousStarted) return;
     autonomousStarted = true;
 
     function autonomousLoop() {
-    const roll = Math.random();
-    if (roll < 0.4) {
-        document.getElementById('nextBtn').click();
-    } else if (roll < 0.7) {
-        document.getElementById('prevBtn').click();
-    } else if (roll < 0.85) {
-        document.getElementById('zoomInBtn').click();
-    } else {
-        document.getElementById('zoomOutBtn').click();
+        const roll = Math.random();
+        if (roll < 0.4) {
+            document.getElementById('nextBtn').click();
+        } else if (roll < 0.7) {
+            document.getElementById('prevBtn').click();
+        } else if (roll < 0.85) {
+            document.getElementById('zoomInBtn').click();
+        } else {
+            document.getElementById('zoomOutBtn').click();
+        }
+        const nextDelay = Math.max(1000, 3000 - chaos * 50);
+        setTimeout(autonomousLoop, nextDelay);
     }
-    const nextDelay = Math.max(1000, 3000 - chaos * 50);
-    setTimeout(autonomousLoop, nextDelay);
-  }
-  autonomousLoop();
+    autonomousLoop();
 }
 
+
 // ------- HELPER FUNCTIONS ------- //
+
 function triggerGhost() {
-    if (canvas.width === 0 || canvas.height === 0)
-        return;
+    if (canvas.width === 0 || canvas.height === 0) return;
 
     const numGhosts = chaos > 10 ? Math.floor(Math.random() * 3) + 1 : 1;
     const lingerDuration = 200 + chaos * 20;
@@ -109,65 +183,65 @@ function triggerShift() {
     galleryOuter.style.transform = `translate(${shiftX}px, ${shiftY}px)`;
 }
 
-// ------- PREV/NEXT VIDEO ------- //
 
-// Switch through videos
+// ------- PREV/NEXT ------- //
+
 function updateArrows() {
-    document.getElementById('prevBtn').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
-    document.getElementById('nextBtn').style.visibility = currentIndex === videos.length - 1 ? 'hidden' : 'visible';
+    // Prev is always hidden at index 0 — can never go back to the photo
+    document.getElementById('prevBtn').style.visibility = currentIndex <= 1 ? 'hidden' : 'visible';
+    document.getElementById('nextBtn').style.visibility = currentIndex === media.length - 1 ? 'hidden' : 'visible';
+
+    const sidebar = document.getElementById('sidebar');
+    sidebar.style.visibility = currentIndex === 0 ? 'hidden' : 'visible';   
 }
 
 document.getElementById('nextBtn').addEventListener('click', () => {
     chaos++;
     nextClicks++;
-    if (chaos > 20) 
-        startAutonomous();
+    if (chaos > 17) startAutonomous();
 
     if (chaos >= 3) {
         const ghostChance = Math.min(0.6, chaos * 0.03);
-        if (Math.random() < ghostChance) 
-            triggerGhost();
+        if (Math.random() < ghostChance) triggerGhost();
     }
 
     if (chaos >= 15) {
         const shiftChance = Math.min(0.4, chaos * 0.02);
-        if (Math.random() < shiftChance) 
-            triggerShift();
+        if (Math.random() < shiftChance) triggerShift();
     }
 
-    currentIndex = (currentIndex + 1) % videos.length;
-    vid.src = videos[currentIndex];
-    vid.addEventListener('loadedmetadata', () => { vid.play(); }, { once: true });
+    if (currentIndex < media.length - 1) {
+        currentIndex++;
+        loadMedia(currentIndex);
+    }
     updateArrows();
 });
 
 document.getElementById('prevBtn').addEventListener('click', () => {
+    // Never go back to index 0 (the photo)
+    if (currentIndex <= 1) return;
+
     chaos++;
     backClicks++;
-
-    if (chaos > 20) 
-        startAutonomous();
+    if (chaos > 20) startAutonomous();
 
     if (chaos >= 10) {
         const shiftChance = Math.min(0.4, chaos * 0.02);
-        if (Math.random() < shiftChance) 
-            triggerShift();
+        if (Math.random() < shiftChance) triggerShift();
     }
 
     if (chaos >= 12) {
         const ghostChance = Math.min(0.5, chaos * 0.03);
-        if (Math.random() < ghostChance) 
-            triggerGhost();
+        if (Math.random() < ghostChance) triggerGhost();
     }
 
-    currentIndex = (currentIndex - 1 + videos.length) % videos.length;
-    vid.src = videos[currentIndex];
-    vid.addEventListener('loadedmetadata', () => { vid.play(); }, { once: true });
+    currentIndex--;
+    loadMedia(currentIndex);
     updateArrows();
 });
 
 
-// ------- SIDEBAR ------- //
+// ------- SIDEBAR DRAG ------- //
 
 const sidebar = document.getElementById('sidebar');
 const sidebarHeader = document.getElementById('sidebar-header');
@@ -194,7 +268,9 @@ document.addEventListener('mouseup', () => {
     sidebar.style.cursor = 'grab';
 });
 
-// ------- Zoom In ------- //
+
+// ------- ZOOM IN ------- //
+
 document.getElementById('zoomInBtn').addEventListener('click', () => {
     displayWidth += 80;
     if (clicks < 10) {
@@ -207,11 +283,12 @@ document.getElementById('zoomInBtn').addEventListener('click', () => {
     }
 });
 
-// ------- Zoom out ------- //
+// ------- ZOOM OUT ------- //
+
 document.getElementById('zoomOutBtn').addEventListener('click', () => {
-    const goesUp = Math.random() < 0.15; // 15% chance it grows
+    const goesUp = Math.random() < 0.15;
     displayWidth += goesUp ? 80 : -80;
-    displayWidth = Math.max(100, displayWidth); // don't let it get too small
+    displayWidth = Math.max(100, displayWidth);
 });
 
 updateArrows();
