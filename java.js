@@ -193,7 +193,10 @@ function updateArrows() {
     // Prev is always hidden at index 0 — can never go back to the photo
     document.getElementById('prevBtn').style.visibility = currentIndex <= 1 ? 'hidden' : 'visible';
     document.getElementById('nextBtn').style.visibility = currentIndex === media.length - 1 ? 'hidden' : 'visible';
-
+    document.querySelectorAll('.intro-text').forEach(el => {
+      el.style.display = currentIndex >= 1 ? 'none' : 'block';
+    });
+    
     const sidebar = document.getElementById('sidebar');
     sidebar.style.visibility = currentIndex === 0 ? 'hidden' : 'visible';   
 }
